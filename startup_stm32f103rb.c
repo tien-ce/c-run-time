@@ -1,8 +1,42 @@
 #define IVT_ARRAY_SIZE 84 // Interupt vector table size, 84 vector entry, each entry occupies 4 bytes
 extern int main(void);
-extern unsigned int _stack;
+
+/* symbol defined by the linker script*/
+extern unsigned int _stack; // stack pointer
+extern unsigned int _idata; // the .data section in flash
+extern unsigned int _data;  // the .data section in ram
+extern unsigned int _edata; // the end of .data section in ram
+extern unsigned int _bss; // the start of .bss section in ram
+extern unsigned int _ebss; // the end of .bss section in ram
+
+/* Initilize data for ram by 
+ *  Copy value from flash with .data section
+ *  Initialize 0 with .bss section
+ */
+static void initilze_data(void)
+{
+    /* Get the symbol to memory address defined in link script */
+    unsigned int *flash_data_ptr = &_idata;
+    unsigned int *ram_data_ptr = &_data;
+    unsigned int *ram_bss_ptr = &_bss;
+    /* Copy value from flash to ram with .data section */
+    while (ram_data_ptr < &_edata)
+    {
+        *ram_data_ptr++ = *flash_data_ptr++;
+    }
+
+    /* Initialize the value of .bss section in ram by filling with 0 */
+    while (ram_bss_ptr < &_ebss)
+    {
+        *ram_bss_ptr++ = 0; 
+    }
+    
+}
+
 void isr_reset(void)
 {
+    // Initilize data variable
+    initilze_data();
     main();
     while(1); // We should never reach here 
 }
